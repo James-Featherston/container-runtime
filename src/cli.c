@@ -4,13 +4,15 @@ Parse arguments into a single config struct.
 */
 
 #include "cli.h"
+#include "util.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 // Function definitions
 void cfg_init_defaults(struct container_config *cfg);
 void cli_print_usage(FILE *out);
-int cli_parse_run(int argc, char **argv, struct container_config *cfg);
+int cli_parse_run(int argc, char **argv, struct container_config *ccfg);
 
 
 int cli_parse(int argc, char **argv, struct cli_result *cli_res) {
@@ -20,6 +22,7 @@ int cli_parse(int argc, char **argv, struct cli_result *cli_res) {
   // CASE 0: missing subcommand
   if (argc < 2) {
     fprintf(stderr, "minijfc: missing subcommand\n");
+    cli_print_usage(stderr);
     return 2;
   }
 
@@ -39,7 +42,15 @@ int cli_parse(int argc, char **argv, struct cli_result *cli_res) {
   // CASE 3: kill
   if (strcmp(argv[1], "kill") == 0) {
     cli_res->action = CLI_ACT_KILL;
-    // TODO: Validate presence of ID
+    if (argc < 3) {
+      fprintf(stderr, "minijfc: 'kill' requires container ID\n");
+      return 2;
+    }
+    if (argc > 3) {
+      fprintf(stderr, "minijfc: 'kill' takes only one argument\n");
+      return 2;
+    }
+    cli_res->id = argv[2];
     return 0;
   }
 
@@ -58,28 +69,105 @@ int cli_parse(int argc, char **argv, struct cli_result *cli_res) {
 }
 
 void cfg_init_defaults(struct container_config *ccfg) {
-    ccfg->rootfs = NULL;
-    ccfg->hostname = NULL;
-    ccfg->argv = NULL;
-    ccfg->argc = 0;
-    ccfg->mem_limit_bytes = -1;
-    ccfg->cpu_limit = -1;
-    ccfg->flags = 0;
+  ccfg->rootfs = NULL;
+  ccfg->hostname = NULL;
+  ccfg->argv = NULL;
+  ccfg->argc = 0;
+  ccfg->mem_limit_bytes = -1;
+  ccfg->cpu_limit = -1;
+  ccfg->flags = 0;
 }
 
 void cli_print_usage(FILE *out) {
-  printf("PRINT USAGE INFO HERE\n");
+  fprintf(out, "Options:\n");
+  fprintf(out, "\t minijfc run --rootfs PATH [--hostname NAME] [--mem SIZE] [--cpu  FRACTION] -- CMD\n");
+  fprintf(out, "\t minijfc ps\n");
+  fprintf(out, "\t minijfc kill ID\n");
 }
 
-// TODO: Add parse helpers
+void cli_print_run_usage(FILE * out) {
+  fprintf(out, "Usage: minijfc run --rootfs PATH [--hostname NAME] [--mem SIZE] [--cpu FRACTION] -- CMD\n");
+}
 
-int cli_parse_run(int argc, char **argv, struct container_config *cfg) {
-    // TODO: Implement parse run
-    // parse run-specific options
-    // parse options
-    // find '--'
-    // fill cfg->argv
-    // validate
+int cli_parse_run(int argc, char **argv, struct container_config *ccfg) {
+  // parse run-specific options
 
-    return 0;
+  // parse options
+  if (argc < 1) {
+    fprintf(stderr, "minijfc: 'run' requires arguments\n");
+    cli_print_run_usage(stderr);
+    return 2;
+  }
+
+  if (strcmp(argv[0], "--rootfs") != 0) {
+    fprintf(stderr, "minijfc: error: --rootfs is required\n");
+    cli_print_run_usage(stderr);
+    return 2;
+  }
+
+  if (argc < 2) {
+    fprintf(stderr, "minijfc: error: missing argument for --rootfs\n");
+    cli_print_run_usage(stderr);
+    return 2;
+  }
+
+  //TODO: NEED TO VALIDATE ROOTFS PATH
+  ccfg->rootfs = argv[1];
+
+  argc -= 2;
+  argv += 2;
+
+  while (argc > 0) {
+    if (strcmp(argv[0], "--hostname") == 0) {
+      if (argc < 2) {
+        fprintf(stderr, "minijfc: error: missing argument for --hostname\n");
+        cli_print_run_usage(stderr);
+        return 2;
+      }
+      // TODO: NEED TO VALIDATE HOSTNAME LENGTH/CHARACTERS
+      ccfg->hostname = argv[1];
+    } else if (strcmp(argv[0], "--mem") == 0) {
+      if (argc < 2) {
+        fprintf(stderr, "minijfc: error: missing argument for --mem\n");
+        cli_print_run_usage(stderr);
+        return 2;
+      }
+      // TODO: NEED TO VALIDATE MEMORY SIZE
+      ccfg->mem_limit_bytes = atol(argv[1]);
+      TODO_PANIC("Memory limit not implemented");
+    } else if (strcmp(argv[0], "--cpu") == 0) {
+      if (argc < 2) {
+        fprintf(stderr, "minijfc: error: missing argument for --cpu\n");
+        cli_print_run_usage(stderr);
+        return 2;
+      }
+      // TODO: NEED TO VALIDATE CPU LIMIT
+      ccfg->cpu_limit = atof(argv[1]);
+      TODO_PANIC("CPU limit not implemented");
+    } else if (strcmp(argv[0], "--") == 0) {
+      break;
+    } else {
+      fprintf(stderr, "minijfc: error: unknown option '%s'\n", argv[0]);
+      cli_print_run_usage(stderr);
+      return 2;
+    }
+    argc -= 2;
+    argv += 2;
+  }
+  if (argc == 0 || strcmp(argv[0], "--") != 0) {
+    fprintf(stderr, "minijfc: error: missing '--' before command\n");
+    cli_print_run_usage(stderr);
+    return 2;
+  }
+  argc -= 1;
+  argv += 1; 
+  if (argc == 0) {
+    fprintf(stderr, "minijfc: error: missing command to run\n");
+    cli_print_run_usage(stderr);
+    return 2;
+  }
+  ccfg->argv = argv;
+  ccfg->argc = argc;
+
+  return 0;
 }
