@@ -98,18 +98,41 @@ int container_run(const struct container_config *ccfg) {
 }
 
 static int container_child_main(void *arg) {
+  struct child_args *cargs = (struct child_args *)arg;
+  const struct container_config *ccfg = cargs->ccfg;
+
   // wait on pipe for parent to finish uid/gid maps
+  char buf;
+  if (read(cargs->sync_fd, &buf, 1) != 1) {
+    perror("read from sync pipe");
+    return 1;
+  }
+  close(cargs->sync_fd);
 
-  // unshare(CLONE_NEWNS | CLONE_NEWUTS)
+  // Setup namespaces: mount, uts
+  if (unshare(CLONE_NEWNS | CLONE_NEWUTS) == -1) {
+    perror("unshare");
+    return 1;
+  }
 
-  // mount(NULL, "/", NULL, MS_REC | MS_PRIVATE, NULL)
+  // Makes it such that mounts do not propagate to host
+  // mount() attaches a file system to the processes directory tree
+  // Here we remount the root (/) as private
+  if (mount(NULL, "/", NULL, MS_REC | MS_PRIVATE, NULL) == -1) {
+    perror("mount MS_PRIVATE");
+    return 1;
+  }
 
-  // sethostname(cfg->hostname or default)
+  // Set hostname
+  const char *hostname = ccfg->hostname ? ccfg->hostname : "minijfc-container";
+  if (sethostname(hostname, strlen(hostname)) < 0) {
+    perror("sethostname");
+    return 1;
+  }
+  // Enter root filesystem
+  if (rootfs_enter(ccfg->rootfs) != 0) return 1;
+  if (rootfs_mount_proc() != 0) return 1;
 
-  // rootfs_enter(cfg->rootfs)
-
-  // rootfs_mount_proc()
-
-  // init_run(cfg->argv)
+  init_run(ccfg->argv)
   return 0;
 }
