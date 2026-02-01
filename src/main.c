@@ -33,7 +33,7 @@ int main(int argc, char *argv[]){
             printf("TODO: Print help\n");
             break;
         default:
-            fprintf(stderr, "internal error\n");
+            fprintf(stderr, "minijfc: internal error\n");
             return 1;
     }
 

@@ -8,11 +8,14 @@ Parse arguments into a single config struct.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h> // For HOST_NAME_MAX
+#include <sys/stat.h> // For file system metadata
 
 // Function definitions
 void cfg_init_defaults(struct container_config *cfg);
 void cli_print_usage(FILE *out);
 int cli_parse_run(int argc, char **argv, struct container_config *ccfg);
+static int validate_path(const char *path);
 
 
 int cli_parse(int argc, char **argv, struct cli_result *cli_res) {
@@ -90,9 +93,9 @@ void cli_print_run_usage(FILE * out) {
 }
 
 int cli_parse_run(int argc, char **argv, struct container_config *ccfg) {
-  // parse run-specific options
+  int r;
 
-  // parse options
+  // parse run-specific options
   if (argc < 1) {
     fprintf(stderr, "minijfc: 'run' requires arguments\n");
     cli_print_run_usage(stderr);
@@ -110,8 +113,10 @@ int cli_parse_run(int argc, char **argv, struct container_config *ccfg) {
     cli_print_run_usage(stderr);
     return 2;
   }
-
-  //TODO: NEED TO VALIDATE ROOTFS PATH
+  
+  if ((r = validate_path(argv[1])) != 0) {
+    return r;
+  }
   ccfg->rootfs = argv[1];
 
   argc -= 2;
@@ -124,7 +129,11 @@ int cli_parse_run(int argc, char **argv, struct container_config *ccfg) {
         cli_print_run_usage(stderr);
         return 2;
       }
-      // TODO: NEED TO VALIDATE HOSTNAME LENGTH/CHARACTERS
+      if (strlen(argv[1]) >= HOST_NAME_MAX) {
+        fprintf(stderr, "minijfc: error: hostname too long (MAX %d characters)\n", HOST_NAME_MAX - 1);
+        cli_print_run_usage(stderr);
+        return 2;
+      }
       ccfg->hostname = argv[1];
     } else if (strcmp(argv[0], "--mem") == 0) {
       if (argc < 2) {
@@ -168,6 +177,27 @@ int cli_parse_run(int argc, char **argv, struct container_config *ccfg) {
   }
   ccfg->argv = argv;
   ccfg->argc = argc;
+
+  return 0;
+}
+
+static int validate_path(const char *path) {
+  struct stat st; // Structure to hold file system metadata
+
+  if (!path) {
+      fprintf(stderr, "minijfc: internal error: must pass non-null string to validate_path\n");
+      return -1;
+    }
+
+  if (stat(path, &st) != 0) { // Stat system call to get file info
+    fprintf(stderr, "minijfc: error: cannot access path '%s'\n", path);
+    return 2; 
+  }
+
+  if (!S_ISDIR(st.st_mode)) { // Check if it's a directory
+    fprintf(stderr, "minijfc: error: path '%s' is not a directory\n", path);
+    return 2; 
+  }
 
   return 0;
 }
