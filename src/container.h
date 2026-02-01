@@ -14,4 +14,6 @@ struct container_config {
     int flags; // bitmask for various flags
 };
 
+int container_run(const struct container_config *ccfg);
+
 #endif // CONTAINER_H

@@ -5,6 +5,7 @@ Author: James Featherston
 
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "cli.h"
 #include "container.h"
 
@@ -21,8 +22,7 @@ int main(int argc, char *argv[]){
 
     switch (cli_res.action) {
         case CLI_ACT_RUN: 
-            printf("TODO: Run container\n");
-            break;
+            return container_run(&cli_res.ccfg);
         case CLI_ACT_PS:
             printf("TODO: List containers\n");
             break;

@@ -1,5 +1,7 @@
 /*
 File system isolation logic.
+
+chroot() + mount /proc
 */
 
 // int rootfs_enter(const char *rootfs_path)
