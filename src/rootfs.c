@@ -1,11 +1,17 @@
 /*
 File system isolation logic.
-
-chroot() + mount /proc
 */
-
+#define _GNU_SOURCE
 #include "rootfs.h"
 #include "util.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/mount.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 int rootfs_enter(const char *rootfs_path) {
   if (!rootfs_path) {

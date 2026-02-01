@@ -1,6 +1,9 @@
 # Executable
 minijfc
 
+# Directories
+rootfs/
+
 # Prerequisites
 *.d
 

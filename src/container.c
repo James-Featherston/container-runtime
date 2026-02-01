@@ -7,15 +7,20 @@ It handles starting, stopping, and managing containers based on user commands.
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <errno.h>
 #include <sched.h> // Scheduler functions clone, unshare
 #include <unistd.h> // Unix standard functions pipe, write, close, getuid, getgid
 #include <sys/types.h> // pid_t, uid_t, gid_t
 #include <signal.h> // Signals
 #include <sys/wait.h> // waitpid
+#include <sys/mount.h> // mount, umount
 
 
 #include "container.h"
 #include "namespaces.h"
+#include "rootfs.h"
+#include "init.h"
 
 #define STACK_SIZE (1024 * 1024)
 
@@ -133,6 +138,6 @@ static int container_child_main(void *arg) {
   if (rootfs_enter(ccfg->rootfs) != 0) return 1;
   if (rootfs_mount_proc() != 0) return 1;
 
-  init_run(ccfg->argv)
+  init_run(ccfg->argv);
   return 0;
 }

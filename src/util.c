@@ -11,16 +11,18 @@ void todo_panic(const char *msg, const char *file, int line) {
   abort();
 }
 
-void write_all(int fd, const char *buf, size_t len) {
-  size_t total_written = 0;
-  while (total_written < len) {
-    ssize_t n = write(fd, buf + total_written, len - total_written);
-    if (n == -1) {
-      perror("write");
-      exit(1);
-    }
-    total_written += n;
+int write_all(int fd, const char *buf, size_t len) {
+  while (len > 0) {
+    ssize_t n = write(fd, buf, len);
+    if (n < 0) {
+      if (errno == EINTR)
+        continue;
+      return -1;
   }
+    buf += (size_t)n;
+    len -= (size_t)n;
+  }
+  return 0;
 }
 
 int write_file(const char *path, const char *s) {

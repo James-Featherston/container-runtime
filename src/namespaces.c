@@ -1,9 +1,15 @@
 /*
-uid/gid mapping + unshare helpers
+Namespace setup logic.
 */
 
 #include "namespaces.h"
 #include "util.h"
+
+#define _GNU_SOURCE
+#include "namespaces.h"
+
+#include <errno.h>
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 
