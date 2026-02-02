@@ -20,5 +20,10 @@ $(BIN): $(OBJS) # Link the object files to create the executable
 $(SRC_DIR)/%.o: $(SRC_DIR)/%.c # Compile source files to object files
 	$(CC) $(CFLAGS) -c $< -o $@
 
+test: $(BIN)
+	@echo "Running tests...\n"
+	./tests/m1_smoke.sh
+	@echo "\nAll tests completed."
+
 clean: # Clean up generated files
 	rm -f $(SRC_DIR)/*.o $(BIN)
