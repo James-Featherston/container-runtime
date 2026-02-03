@@ -139,6 +139,5 @@ static int container_child_main(void *arg) {
   if (rootfs_enter(ccfg->rootfs) != 0) return 1;
   if (rootfs_mount_proc() != 0) return 1;
 
-  init_run(ccfg->argv);
-  return 0;
+  return init_run(ccfg->argv);
 }

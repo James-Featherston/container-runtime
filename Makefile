@@ -23,6 +23,8 @@ $(SRC_DIR)/%.o: $(SRC_DIR)/%.c # Compile source files to object files
 test: $(BIN)
 	@echo "Running tests...\n"
 	./tests/m1_smoke.sh
+	@echo ""
+	./tests/m2_smoke.sh
 	@echo "\nAll tests completed."
 
 clean: # Clean up generated files

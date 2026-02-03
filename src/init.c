@@ -44,8 +44,12 @@ int init_run(char *const argv[]) {
   }
 
   pid_t orig_pgrp = -1; // original process group unknonw
+  int did_tty_handoff = 0; // was terminal control handed off
 
-  if (isatty(STDIN_FILENO)) {
+  // TODO: replace with a real cfg flag later (e.g., --tty)
+  int want_tty = 0;
+
+  if (want_tty && isatty(STDIN_FILENO)) {
       orig_pgrp = tcgetpgrp(STDIN_FILENO); // remember the foreground process group
   }
 
@@ -69,8 +73,11 @@ int init_run(char *const argv[]) {
   if (orig_pgrp != -1) { // We have a controlling terminal
     if (tcsetpgrp(STDIN_FILENO, main_pid) < 0) { // Give terminal control to main process group
       fprintf(stderr, "minijfc: warning: tcsetpgrp failed: %s\n", strerror(errno));
+    } else {
+      did_tty_handoff = 1;
     }
   }
+
 
   int main_status = 0;
   int have_main_status = 0;
@@ -101,7 +108,11 @@ int init_run(char *const argv[]) {
       break;
     }
   }
-  kill(-main_pid, SIGTERM); // Ensure all children are terminated
+
+  // restore terminal foreground process group
+  if (did_tty_handoff) {
+    tcsetpgrp(STDIN_FILENO, orig_pgrp);
+  }
 
   if (!have_main_status) {
     fprintf(stderr, "minijfc: error: main process exited but no status recorded\n");
