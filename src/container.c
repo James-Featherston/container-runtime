@@ -135,6 +135,7 @@ static int container_child_main(void *arg) {
     return 1;
   }
   // Enter root filesystem
+  if (rootfs_bind_devnull(ccfg->rootfs) != 0) return 1;
   if (rootfs_enter(ccfg->rootfs) != 0) return 1;
   if (rootfs_mount_proc() != 0) return 1;
 

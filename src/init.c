@@ -43,6 +43,12 @@ int init_run(char *const argv[]) {
     return 1;
   }
 
+  pid_t orig_pgrp = -1; // original process group unknonw
+
+  if (isatty(STDIN_FILENO)) {
+      orig_pgrp = tcgetpgrp(STDIN_FILENO); // remember the foreground process group
+  }
+
   pid_t main_pid = fork();
 
   if (main_pid < 0) {
@@ -59,6 +65,12 @@ int init_run(char *const argv[]) {
   }
 
   setpgid(main_pid, main_pid); // Ensure main process is in its own process group
+
+  if (orig_pgrp != -1) { // We have a controlling terminal
+    if (tcsetpgrp(STDIN_FILENO, main_pid) < 0) { // Give terminal control to main process group
+      fprintf(stderr, "minijfc: warning: tcsetpgrp failed: %s\n", strerror(errno));
+    }
+  }
 
   int main_status = 0;
   int have_main_status = 0;
