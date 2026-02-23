@@ -47,6 +47,7 @@ int init_run(char *const argv[]) {
   int did_tty_handoff = 0; // was terminal control handed off
 
   // TODO: replace with a real cfg flag later (e.g., --tty)
+  // TODO: Fix how terminal control is passed to work for /bin/sh
   int want_tty = 0;
 
   if (want_tty && isatty(STDIN_FILENO)) {

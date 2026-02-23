@@ -1,5 +1,6 @@
 #ifndef CONTAINER_H
 #define CONTAINER_H
+#include <stdint.h>
 
 struct container_config {
     char *rootfs; // path to root filesystem
@@ -9,7 +10,12 @@ struct container_config {
     int argc;
 
     long long mem_limit_bytes;   // -1 if not specified
-    double cpu_limit;            // -1 if not specified
+
+    int cpu_limit_set; // 0 if not specified
+    int cpu_quota_is_max;
+    uint64_t cpu_quota_us;
+    uint64_t cpu_period_us;
+
 
     int flags; // bitmask for various flags
 };
